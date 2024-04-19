@@ -4,6 +4,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { useCursor, MeshReflectorMaterial, Image, Text, Environment } from '@react-three/drei'
 import { useRoute, useLocation } from 'wouter'
 import { easing } from 'maath'
+import { OrbitControls, useGLTF } from '@react-three/drei';
 import getUuid from 'uuid-by-string'
 
 const GOLDENRATIO = 1.61803398875
@@ -31,6 +32,7 @@ export const App = ({ images }) => (
       </mesh>
     </group>
     <Environment preset="city" />
+    <OrbitControls />
   </Canvas>
 )
 
@@ -51,9 +53,18 @@ function Frames({ images, q = new THREE.Quaternion(), p = new THREE.Vector3() })
     }
   })
   useFrame((state, dt) => {
-    easing.damp3(state.camera.position, p, 0.4, dt)
-    easing.dampQ(state.camera.quaternion, q, 0.4, dt)
-  })
+    if (state.camera.position.y < 0) {
+      state.camera.position.y = 0;
+    }
+    if (state.camera.position.y > 5) {
+      state.camera.position.y = 5;
+    }
+    if (clicked.current) {
+      easing.damp3(state.camera.position, p, 0.4, dt)
+      easing.dampQ(state.camera.quaternion, q, 0.4, dt)
+    }
+  });
+
   return (
     <group
       ref={ref}
@@ -63,9 +74,9 @@ function Frames({ images, q = new THREE.Quaternion(), p = new THREE.Vector3() })
     </group>
   )
 }
-
 function Frame({ url, c = new THREE.Color(), ...props }) {
-  const image = useRef()
+  const imageFront = useRef()
+  const imageBack = useRef()
   const frame = useRef()
   const [, params] = useRoute('/item/:id')
   const [hovered, hover] = useState(false)
@@ -74,8 +85,10 @@ function Frame({ url, c = new THREE.Color(), ...props }) {
   const isActive = params?.id === name
   useCursor(hovered)
   useFrame((state, dt) => {
-    image.current.material.zoom = 2 + Math.sin(rnd * 10000 + state.clock.elapsedTime / 3) / 2
-    easing.damp3(image.current.scale, [0.85 * (!isActive && hovered ? 0.85 : 1), 0.9 * (!isActive && hovered ? 0.905 : 1), 1], 0.1, dt)
+    imageFront.current.material.zoom = 2 + Math.sin(rnd * 10000 + state.clock.elapsedTime / 3) / 2
+    imageBack.current.material.zoom = 2 + Math.sin(rnd * 10000 + state.clock.elapsedTime / 3) / 2
+    easing.damp3(imageFront.current.scale, [0.85 * (!isActive && hovered ? 0.85 : 1), 0.9 * (!isActive && hovered ? 0.905 : 1), 1], 0.1, dt)
+    easing.damp3(imageBack.current.scale, [0.85 * (!isActive && hovered ? 0.85 : 1), 0.9 * (!isActive && hovered ? 0.905 : 1), 1], 0.1, dt)
     easing.dampC(frame.current.material.color, hovered ? 'orange' : 'white', 0.1, dt)
   })
   return (
@@ -92,7 +105,8 @@ function Frame({ url, c = new THREE.Color(), ...props }) {
           <boxGeometry />
           <meshBasicMaterial toneMapped={false} fog={false} />
         </mesh>
-        <Image raycast={() => null} ref={image} position={[0, 0, 0.7]} url={url} />
+        <Image raycast={() => null} ref={imageFront} position={[0, 0, 0.7]} url={url} />
+        <Image raycast={() => null} ref={imageBack} position={[0, 0, -0.7]} url={url} rotation={[0, Math.PI, 0]} />
       </mesh>
       <Text maxWidth={0.5} anchorX="left" anchorY="top" position={[0.55, GOLDENRATIO, 0]} fontSize={0.036}>
         {props.name}
