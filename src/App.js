@@ -14,6 +14,9 @@ export const App = ({ images }) => (
     <color attach="background" args={['#191920']} />
     <fog attach="fog" args={['#191920', 0, 15]} />
     <group position={[0, -0.5, 0]}>
+      <Text position={[0, 3, 0]} fontSize={0.2} color="white">
+        Our Gallery
+      </Text>
       <Frames images={images} />
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[50, 50]} />
